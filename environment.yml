@@ -1,0 +1,12 @@
+name: npiw_npgo
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python
+  - argopy
+  - matplotlib
+  - scipy
+  - numpy
+  - gsw
+  - ipykernel
