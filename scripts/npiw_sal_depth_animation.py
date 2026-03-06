@@ -10,10 +10,12 @@ import xarray as xr
 LON        = (-180, -130)
 LAT        = (30, 60)
 START      = "2022-01-01"
-END        = "2022-01-10"
+END        = "2022-06-30"
 ISOPYCNAL  = 26.8
-DURATION   = 10    # seconds
+DURATION   = 5     # seconds
 DEPTH_MAX  = 1000  # metres
+SAL_CONTOURS   = [33.7, 33.9, 34.1]   # psu
+DEPTH_CONTOURS = [200,  400,  600]    # m
 # ──────────────────────────────────────────────────────────────────────────────
 
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "outputs", "figures", "animations")
@@ -105,6 +107,9 @@ title1 = ax1.set_title(f"Salinity on σ₀={ISOPYCNAL} isopycnal, {date_str0}")
 title2 = ax2.set_title(f"Depth of σ₀={ISOPYCNAL} isopycnal, {date_str0}")
 plt.tight_layout()
 
+contours1 = [None]
+contours2 = [None]
+
 
 def update(i):
     date_str = str(times[i])[:10]
@@ -112,14 +117,26 @@ def update(i):
     mesh2.set_array(depth_iso.isel(time=i).values.ravel())
     title1.set_text(f"Salinity on σ₀={ISOPYCNAL} isopycnal, {date_str}")
     title2.set_text(f"Depth of σ₀={ISOPYCNAL} isopycnal, {date_str}")
-    return mesh1, mesh2, title1, title2
+
+    # Remove previous contours
+    if contours1[0] is not None:
+        contours1[0].remove()
+    if contours2[0] is not None:
+        contours2[0].remove()
+
+    contours1[0] = ax1.contour(lons, lats, sal_iso.isel(time=i),
+                                levels=SAL_CONTOURS, colors="k", linewidths=0.7)
+    contours2[0] = ax2.contour(lons, lats, depth_iso.isel(time=i),
+                                levels=DEPTH_CONTOURS, colors="k", linewidths=0.7)
+    ax1.clabel(contours1[0], fmt="%.1f", fontsize=7)
+    ax2.clabel(contours2[0], fmt="%d m", fontsize=7)
 
 
 n_frames = len(times)
 save_fps = n_frames / DURATION  # fps needed to hit target duration
 
 print(f"Rendering {n_frames} frames...")
-anim = animation.FuncAnimation(fig, update, frames=n_frames, blit=True)
+anim = animation.FuncAnimation(fig, update, frames=n_frames, blit=False)
 
 anim.save(OUTPUT_PATH, fps=save_fps, writer="ffmpeg", dpi=150)
 print(f"Saved: {OUTPUT_PATH}")
